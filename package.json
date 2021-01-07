@@ -2,12 +2,12 @@
   "name": "saturdays-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "start": "ts-node-dev --respawn --inspect -- src/server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn --inspect -- src/server.ts",
+    "start": "node dist/server.js"
   },
-  "author": "",
+  "author": "Ashar Saad",
   "license": "ISC",
   "devDependencies": {
     "@types/dotenv": "^8.2.0",
