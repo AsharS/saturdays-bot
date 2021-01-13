@@ -1,11 +1,19 @@
 import dotenv from 'dotenv';
 import axios, { AxiosResponse } from 'axios';
 import qs from 'querystring';
-import { Client, Message, MessageEmbed } from 'discord.js';
+import {
+  Client,
+  DMChannel,
+  Message,
+  MessageEmbed,
+  TextChannel
+} from 'discord.js';
+import nodeCron from 'node-cron';
 
 dotenv.config();
 const client = new Client();
 const refreshToken = process.env.YAHOO_REFRESH_TOKEN;
+const channelId = process.env.CHANNEL_ID as string;
 let fantasyAccessToken: string;
 
 client.on('ready', async () => {
@@ -28,45 +36,58 @@ client.on('message', async (msg: Message) => {
   if (!content || !content.startsWith('!')) return;
 
   if (msg.content === '!scores') {
-    let body;
-
-    body = await getScoreboard();
-
-    const leagueName = body.data.fantasy_content.league[0].name;
-    const leagueScoreboard = body.data.fantasy_content.league[1].scoreboard;
-    const matchups = leagueScoreboard['0'].matchups;
-
-    const embedMessage = new MessageEmbed();
-    embedMessage.setAuthor(
-      `${leagueName} - Week ${leagueScoreboard.week}`,
-      'https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/f15f44040d9f09ba0b2541a9ffcc5579495d5b70d3df858654e88d1f3c03c38e.jpg',
-      'https://basketball.fantasysports.yahoo.com/nba/27882'
-    );
-
-    for (let i = 0; i < matchups.count; i++) {
-      const matchup = new Matchup(matchups[i].matchup['0'].teams);
-
-      let team1Name = matchup.team1.name;
-      let team2Name = matchup.team2.name;
-      let team1Score = matchup.team1.score;
-      let team2Score = matchup.team2.score;
-      if (Number(matchup.team1.score) > Number(matchup.team2.score)) {
-        team1Name = `**${team1Name}**`;
-      } else {
-        team2Name = `**${team2Name}**`;
-      }
-
-      embedMessage.addField(
-        '\u200B',
-        `${team1Name} - ${team1Score} *(${matchup.team1.projectedScore})* \u200B \u200B \`vs\` \u200B \u200B ${team2Score} *(${matchup.team2.projectedScore})* - ${team2Name}`
-      );
-    }
-
-    msg.channel.send(embedMessage);
+    await showScores(msg.channel);
   } else {
     msg.reply('Type !scores you BOT');
   }
 });
+
+nodeCron.schedule('0 1 * * *', () => {
+  const channel: TextChannel = client.channels.cache.get(
+    channelId
+  ) as TextChannel;
+  showScores(channel);
+}, {
+  timezone: 'America/Chicago'
+});
+
+async function showScores(channel: TextChannel | DMChannel) {
+  let body;
+
+  body = await getScoreboard();
+
+  const leagueName = body.data.fantasy_content.league[0].name;
+  const leagueScoreboard = body.data.fantasy_content.league[1].scoreboard;
+  const matchups = leagueScoreboard['0'].matchups;
+
+  const embedMessage = new MessageEmbed();
+  embedMessage.setAuthor(
+    `${leagueName} - Week ${leagueScoreboard.week}`,
+    'https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/f15f44040d9f09ba0b2541a9ffcc5579495d5b70d3df858654e88d1f3c03c38e.jpg',
+    'https://basketball.fantasysports.yahoo.com/nba/27882'
+  );
+
+  for (let i = 0; i < matchups.count; i++) {
+    const matchup = new Matchup(matchups[i].matchup['0'].teams);
+
+    let team1Name = matchup.team1.name;
+    let team2Name = matchup.team2.name;
+    let team1Score = matchup.team1.score;
+    let team2Score = matchup.team2.score;
+    if (Number(matchup.team1.score) > Number(matchup.team2.score)) {
+      team1Name = `**${team1Name}**`;
+    } else {
+      team2Name = `**${team2Name}**`;
+    }
+
+    embedMessage.addField(
+      '\u200B',
+      `${team1Name} - ${team1Score} *(${matchup.team1.projectedScore})* \u200B \u200B \`vs\` \u200B \u200B ${team2Score} *(${matchup.team2.projectedScore})* - ${team2Name}`
+    );
+  }
+
+  channel.send(embedMessage);
+}
 
 async function setToken() {
   const tokenURL = 'https://api.login.yahoo.com/oauth2/get_token';
