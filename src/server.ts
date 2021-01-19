@@ -42,7 +42,7 @@ client.on('message', async (msg: Message) => {
   }
 });
 
-nodeCron.schedule('0 1 * * *', () => {
+nodeCron.schedule('0 0 * * *', () => {
   const channel: TextChannel = client.channels.cache.get(
     channelId
   ) as TextChannel;
