@@ -42,14 +42,17 @@ client.on('message', async (msg: Message) => {
   }
 });
 
-nodeCron.schedule('0 0 * * *', () => {
-  const channel: TextChannel = client.channels.cache.get(
-    channelId
-  ) as TextChannel;
-  showScores(channel);
-}, {
-  timezone: 'America/Chicago'
-});
+if (process.env.YAHOO_CRON) {
+  console.log('Starting cron job...');
+  nodeCron.schedule('0 0 * * *', () => {
+    const channel: TextChannel = client.channels.cache.get(
+      channelId
+    ) as TextChannel;
+    showScores(channel);
+  }, {
+    timezone: 'America/Chicago'
+  });
+}
 
 async function showScores(channel: TextChannel | DMChannel) {
   let body;
