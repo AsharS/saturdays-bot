@@ -4,6 +4,7 @@ import { Client, Intents, TextChannel } from 'discord.js';
 import nodeCron from 'node-cron';
 import { Yahoo } from './yahoo/yahoo';
 import { Git } from './git/git';
+import { MusicService } from './music/service';
 
 dotenv.config();
 
@@ -11,13 +12,16 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.get('/', async (req, res) => {
-  const embedMessage = await Git.getLatestStatsUpdate();
+  const embedMessages = await Git.getLatestStatsUpdate();
 
-  if (embedMessage) {
+  if (embedMessages) {
     const channel: TextChannel = client.channels.cache.get(
       process.env.UPDATES_CHANNEL_ID as string
     ) as TextChannel;
-    channel.send(embedMessage);
+
+    for (const embedMessage of embedMessages) {
+      channel.send({embeds: [embedMessage]});
+    }
   }
 
   res.send();
@@ -29,13 +33,16 @@ Git.getLatestStatsUpdate();
 
 console.log('Starting git cron job...');
 nodeCron.schedule('*/5 * * * *', async () => {
-  const embedMessage = await Git.getLatestStatsUpdate();
+  const embedMessages = await Git.getLatestStatsUpdate();
 
-  if (embedMessage) {
+  if (embedMessages) {
     const channel: TextChannel = client.channels.cache.get(
       process.env.UPDATES_CHANNEL_ID as string
     ) as TextChannel;
-    channel.send(embedMessage);
+    
+    for (const embedMessage of embedMessages) {
+      channel.send({embeds: [embedMessage]});
+    }
   }
 });
 
@@ -51,7 +58,7 @@ if (
         process.env.SBA_CHANNEL_ID as string
       ) as TextChannel;
       const message = await Yahoo.getScores();
-      channel.send(message);
+      channel.send({embeds: [message]});
     },
     {
       timezone: 'America/Chicago'
@@ -63,11 +70,12 @@ const client = new Client({
   intents: [
     Intents.FLAGS.GUILDS,
     Intents.FLAGS.GUILD_MESSAGES,
-    Intents.FLAGS.DIRECT_MESSAGES
+    Intents.FLAGS.DIRECT_MESSAGES,
+    Intents.FLAGS.GUILD_VOICE_STATES
   ]
 });
 
-const scoresCommand = {
+const yahooScoresCommand = {
   name: 'scores',
   description: "Display the current week's scores",
   options: []
@@ -79,21 +87,36 @@ client.on('ready', async () => {
 
   Yahoo.setToken();
 
-  client.application?.commands.create(scoresCommand);
+  client.application?.commands.create(yahooScoresCommand);
 });
 
-client.on('interaction', async (interaction) => {
+client.on('interactionCreate', async (interaction) => {
   if (!interaction.isCommand()) {
     return;
   }
 
   // Check if it is the correct command
   if (
-    interaction.commandName === scoresCommand.name &&
+    interaction.commandName === yahooScoresCommand.name &&
     JSON.parse(process.env.YAHOO_COMMANDS_ENABLED as string)
   ) {
     const message = await Yahoo.getScores();
-    interaction.reply(message);
+    interaction.channel?.send({embeds: [message]});
+  }
+});
+
+const prefix = "!";
+
+const musicTextChannel = process.env.MUSIC_CHANNEL_ID as string;
+const musicService = new MusicService();
+
+client.on('message', async message => {
+  if (message.author.bot || !message.content.startsWith(prefix)) {
+    return;
+  }
+
+  if (message.channel.id === musicTextChannel) {
+    musicService.parseMessage(prefix, message);
   }
 });
 
