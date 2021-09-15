@@ -20,7 +20,7 @@ app.get('/', async (req, res) => {
     ) as TextChannel;
 
     for (const embedMessage of embedMessages) {
-      channel.send({embeds: [embedMessage]});
+      channel.send({ embeds: [embedMessage] });
     }
   }
 
@@ -39,9 +39,9 @@ nodeCron.schedule('*/5 * * * *', async () => {
     const channel: TextChannel = client.channels.cache.get(
       process.env.UPDATES_CHANNEL_ID as string
     ) as TextChannel;
-    
+
     for (const embedMessage of embedMessages) {
-      channel.send({embeds: [embedMessage]});
+      channel.send({ embeds: [embedMessage] });
     }
   }
 });
@@ -58,7 +58,7 @@ if (
         process.env.SBA_CHANNEL_ID as string
       ) as TextChannel;
       const message = await Yahoo.getScores();
-      channel.send({embeds: [message]});
+      channel.send({ embeds: [message] });
     },
     {
       timezone: 'America/Chicago'
@@ -101,16 +101,16 @@ client.on('interactionCreate', async (interaction) => {
     JSON.parse(process.env.YAHOO_COMMANDS_ENABLED as string)
   ) {
     const message = await Yahoo.getScores();
-    interaction.channel?.send({embeds: [message]});
+    interaction.channel?.send({ embeds: [message] });
   }
 });
 
-const prefix = "!";
+const prefix = '!';
 
 const musicTextChannel = process.env.MUSIC_CHANNEL_ID as string;
 const musicService = new MusicService();
 
-client.on('message', async message => {
+client.on('message', async (message) => {
   if (message.author.bot || !message.content.startsWith(prefix)) {
     return;
   }

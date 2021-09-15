@@ -1,6 +1,17 @@
-import { Guild, Message, TextChannel } from "discord.js";
-import { AudioPlayer, AudioPlayerStatus, createAudioPlayer, createAudioResource, getVoiceConnection, joinVoiceChannel, NoSubscriberBehavior, StreamType, VoiceConnectionStatus } from '@discordjs/voice';
+import { Guild, Message, TextChannel } from 'discord.js';
+import {
+  AudioPlayer,
+  AudioPlayerStatus,
+  createAudioPlayer,
+  createAudioResource,
+  getVoiceConnection,
+  joinVoiceChannel,
+  NoSubscriberBehavior,
+  StreamType,
+  VoiceConnectionStatus
+} from '@discordjs/voice';
 import ytdl from 'ytdl-core';
+import ytsr, { Video } from 'ytsr';
 
 export class MusicService {
   private queue: Song[] = [];
@@ -11,12 +22,17 @@ export class MusicService {
 
   parseMessage(prefix: string, message: Message) {
     this.textChannel = message.channel as TextChannel;
-    const content = message.content.substr(prefix.length, message.content.length);
+    const content = message.content.substr(
+      prefix.length,
+      message.content.length
+    );
     const messageArray = content.split(' ');
+    const command = messageArray.shift();
+    const query = messageArray.join(' ');
 
-    switch (messageArray[0]) {
+    switch (command) {
       case 'play':
-        this.addSong(messageArray[1], message);
+        this.addSong(query, message);
         break;
       case 'skip':
         this.skip();
@@ -27,7 +43,7 @@ export class MusicService {
     }
   }
 
-  private async addSong(url: string, message: Message) {
+  private async addSong(query: string, message: Message) {
     if (!message.guild || !message.member) {
       return;
     }
@@ -36,30 +52,58 @@ export class MusicService {
     this.voiceChannelId = message.member?.voice.channel?.id;
 
     if (this.voiceChannelId) {
-      const songInfo = await ytdl.getInfo(url);
+      if (query.indexOf('youtube.com') > -1) {
+        const songInfo = await ytdl.getBasicInfo(query);
 
-      if (songInfo) {
-        this.queue.push({
-          title: songInfo.videoDetails.title,
-          url: songInfo.videoDetails.video_url,
-          requestedBy: message.member?.displayName
-        });
+        if (songInfo) {
+          this.queue.push({
+            title: songInfo.videoDetails.title,
+            url: songInfo.videoDetails.video_url,
+            requestedBy: message.member?.displayName
+          });
 
-        this.play();
+          this.play();
+        }
+      } else {
+        const filters = await ytsr.getFilters(query);
+        const videoFilter = filters.get('Type')?.get('Video');
+        if (videoFilter?.url) {
+          const result = await ytsr(videoFilter.url, {
+            gl: 'US',
+            hl: 'en',
+            limit: 1
+          });
+          if (result.items.length > 0) {
+            const firstResult = result.items[0] as Video;
+            this.queue.push({
+              title: firstResult.title,
+              url: firstResult.url,
+              requestedBy: message.member?.displayName
+            });
+
+            this.play();
+          }
+        }
       }
     }
   }
 
   private async play() {
-    const songToPlay = this.queue[0];
-
     if (this.player && this.player.state.status == AudioPlayerStatus.Playing) {
-      this.textChannel?.send(`Added \`${songToPlay.title}\` to the queue.`);
+      this.textChannel?.send(
+        `Added \`${this.queue[this.queue.length - 1].title}\` to the queue.`
+      );
       return;
     }
 
+    const songToPlay = this.queue[0];
+
     let voiceConnection = getVoiceConnection(this.guild?.id!);
-    if (!voiceConnection || voiceConnection.state.status == VoiceConnectionStatus.Disconnected || voiceConnection.state.status == VoiceConnectionStatus.Destroyed) {
+    if (
+      !voiceConnection ||
+      voiceConnection.state.status == VoiceConnectionStatus.Disconnected ||
+      voiceConnection.state.status == VoiceConnectionStatus.Destroyed
+    ) {
       voiceConnection = joinVoiceChannel({
         channelId: this.voiceChannelId!,
         guildId: this.guild?.id!,
@@ -69,7 +113,7 @@ export class MusicService {
         debug: false
       });
     }
-    
+
     if (!this.player) {
       this.player = createAudioPlayer({
         debug: false
@@ -84,7 +128,9 @@ export class MusicService {
       filter: 'audioonly',
       dlChunkSize: 0
     });
-    this.player.play(createAudioResource(stream, { inputType: StreamType.Arbitrary }));
+    this.player.play(
+      createAudioResource(stream, { inputType: StreamType.Arbitrary })
+    );
 
     voiceConnection?.subscribe(this.player);
 
@@ -93,8 +139,9 @@ export class MusicService {
 
   private async skip() {
     this.queue.shift();
-        
+
     if (this.queue.length > 0) {
+      this.player?.pause();
       this.play();
     } else {
       getVoiceConnection(this.guild?.id!)?.destroy();
