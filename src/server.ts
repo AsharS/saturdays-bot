@@ -110,13 +110,23 @@ const prefix = '!';
 const musicTextChannel = process.env.MUSIC_CHANNEL_ID as string;
 const musicService = new MusicService();
 
-client.on('message', async (message) => {
+client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.content.startsWith(prefix)) {
     return;
   }
 
   if (message.channel.id === musicTextChannel) {
     musicService.parseMessage(prefix, message);
+  }
+});
+
+client.on('voiceStateUpdate', (oldState, newState) => {
+  if (oldState.channelId !==  oldState.guild.me?.voice.channelId || newState.channel) {
+    return;
+  }
+
+  if (oldState.channel?.members.size === 1) {
+    musicService.stop();
   }
 });
 

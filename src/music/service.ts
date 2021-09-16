@@ -20,7 +20,7 @@ export class MusicService {
   private voiceChannelId?: string;
   private player?: AudioPlayer;
 
-  parseMessage(prefix: string, message: Message) {
+  public parseMessage(prefix: string, message: Message) {
     this.textChannel = message.channel as TextChannel;
     const content = message.content.substr(
       prefix.length,
@@ -41,6 +41,13 @@ export class MusicService {
         this.stop();
         break;
     }
+  }
+
+  public async stop() {
+    this.queue = [];
+    getVoiceConnection(this.guild?.id!)?.destroy();
+    this.voiceChannelId = undefined;
+    this.textChannel?.send('Finished playing.');
   }
 
   private async addSong(query: string, message: Message) {
@@ -65,26 +72,37 @@ export class MusicService {
           this.play();
         }
       } else {
-        const filters = await ytsr.getFilters(query);
+        const filters = await ytsr.getFilters(query, {
+          gl: 'US',
+          hl: 'en'
+        });
         const videoFilter = filters.get('Type')?.get('Video');
         if (videoFilter?.url) {
           const result = await ytsr(videoFilter.url, {
             gl: 'US',
             hl: 'en',
-            limit: 1
+            limit: 10
           });
           if (result.items.length > 0) {
-            const firstResult = result.items[0] as Video;
-            this.queue.push({
-              title: firstResult.title,
-              url: firstResult.url,
-              requestedBy: message.member?.displayName
-            });
+            const firstResult = result.items.find(
+              (item) => !(item as Video).isLive
+            ) as Video | undefined;
+            if (firstResult) {
+              this.queue.push({
+                title: firstResult.title,
+                url: firstResult.url,
+                requestedBy: message.member?.displayName
+              });
 
-            this.play();
+              this.play();
+            } else {
+              message.reply(`Could not find any videos matching \`${query}\`.`);
+            }
           }
         }
       }
+    } else {
+      message.reply("You're a bigger bot than me, get in a voice channel.");
     }
   }
 
@@ -134,7 +152,9 @@ export class MusicService {
 
     voiceConnection?.subscribe(this.player);
 
-    this.textChannel?.send(`Now playing \`${songToPlay.title}\`.`);
+    this.textChannel?.send(
+      `Now playing \`${songToPlay.title}\`, added by ${songToPlay.requestedBy}.`
+    );
   }
 
   private async skip() {
@@ -142,14 +162,11 @@ export class MusicService {
 
     if (this.queue.length > 0) {
       this.player?.pause();
+      this.textChannel?.send('Skipped.');
       this.play();
     } else {
-      getVoiceConnection(this.guild?.id!)?.destroy();
+      this.stop();
     }
-  }
-
-  private async stop() {
-    getVoiceConnection(this.guild?.id!)?.destroy();
   }
 }
 
