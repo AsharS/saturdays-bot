@@ -5,6 +5,7 @@ import nodeCron from 'node-cron';
 import { Yahoo } from './yahoo/yahoo';
 import { Git } from './git/git';
 import { MusicService } from './music/service';
+import { PepTalk } from './pepTalk/pepTalk'
 
 dotenv.config();
 
@@ -81,6 +82,12 @@ const yahooScoresCommand = {
   options: []
 };
 
+const pepTalkCommand = {
+  name: 'peptalk',
+  description: "Receive a pep talk",
+  options: []
+};
+
 client.on('ready', async () => {
   console.log(`Logged in as ${client.user?.tag}!`);
   client.user?.setActivity('every day is Saturday!');
@@ -88,6 +95,7 @@ client.on('ready', async () => {
   Yahoo.setToken();
 
   client.application?.commands.create(yahooScoresCommand);
+  client.application?.commands.create(pepTalkCommand);
 });
 
 client.on('interactionCreate', async (interaction) => {
@@ -102,6 +110,9 @@ client.on('interactionCreate', async (interaction) => {
   ) {
     const message = await Yahoo.getScores();
     interaction.channel?.send({ embeds: [message] });
+  } else if (interaction.commandName == pepTalkCommand.name) {
+    const message = PepTalk.givePepTalk()
+    interaction.reply(message)
   }
 });
 
