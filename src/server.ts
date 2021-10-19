@@ -5,12 +5,16 @@ import nodeCron from 'node-cron';
 import { Yahoo } from './yahoo/yahoo';
 import { Git } from './git/git';
 import { MusicService } from './music/service';
-import { PepTalk } from './pepTalk/pepTalk'
+import { PepTalk } from './pepTalk/pepTalk';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+const isYahooEnabled = () => {
+  return JSON.parse(process.env.YAHOO_COMMANDS_ENABLED as string);
+};
 
 app.get('/', async (req, res) => {
   const embedMessages = await Git.getLatestStatsUpdate();
@@ -47,10 +51,7 @@ nodeCron.schedule('*/5 * * * *', async () => {
   }
 });
 
-if (
-  JSON.parse(process.env.YAHOO_CRON as string) &&
-  (process.env.SBA_CHANNEL_ID as string)
-) {
+if (isYahooEnabled() && (process.env.SBA_CHANNEL_ID as string)) {
   console.log('Starting SBA cron job...');
   nodeCron.schedule(
     '0 0 * * *',
@@ -84,7 +85,7 @@ const yahooScoresCommand = {
 
 const pepTalkCommand = {
   name: 'peptalk',
-  description: "Receive a pep talk",
+  description: 'Receive a pep talk',
   options: []
 };
 
@@ -94,7 +95,9 @@ client.on('ready', async () => {
 
   Yahoo.setToken();
 
-  client.application?.commands.create(yahooScoresCommand);
+  if (isYahooEnabled()) {
+    client.application?.commands.create(yahooScoresCommand);
+  }
   client.application?.commands.create(pepTalkCommand);
 });
 
@@ -104,15 +107,13 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   // Check if it is the correct command
-  if (
-    interaction.commandName === yahooScoresCommand.name &&
-    JSON.parse(process.env.YAHOO_COMMANDS_ENABLED as string)
-  ) {
+  if (interaction.commandName === yahooScoresCommand.name) {
     const message = await Yahoo.getScores();
-    interaction.channel?.send({ embeds: [message] });
+    await interaction.reply({ content: 'Posting scores', ephemeral: true });
+    await interaction.channel?.send({ embeds: [message] });
   } else if (interaction.commandName == pepTalkCommand.name) {
-    const message = PepTalk.givePepTalk()
-    interaction.reply(message)
+    const message = PepTalk.givePepTalk();
+    await interaction.reply(message);
   }
 });
 
@@ -132,7 +133,10 @@ client.on('messageCreate', async (message) => {
 });
 
 client.on('voiceStateUpdate', (oldState, newState) => {
-  if (oldState.channelId !==  oldState.guild.me?.voice.channelId || newState.channel) {
+  if (
+    oldState.channelId !== oldState.guild.me?.voice.channelId ||
+    newState.channel
+  ) {
     return;
   }
 
