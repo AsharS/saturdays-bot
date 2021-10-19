@@ -110,7 +110,12 @@ client.on('interactionCreate', async (interaction) => {
   if (interaction.commandName === yahooScoresCommand.name) {
     const message = await Yahoo.getScores();
     await interaction.reply({ content: 'Posting scores', ephemeral: true });
-    await interaction.channel?.send({ embeds: [message] });
+
+    if (interaction.channel) {
+      await interaction.channel.send({ embeds: [message] });
+    } else {
+      await interaction.user.send({ embeds: [message] });
+    }
   } else if (interaction.commandName == pepTalkCommand.name) {
     const message = PepTalk.givePepTalk();
     await interaction.reply(message);

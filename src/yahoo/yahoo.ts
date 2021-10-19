@@ -31,7 +31,7 @@ export class Yahoo {
       let team2Score = matchup.team2.score;
       if (Number(matchup.team1.score) > Number(matchup.team2.score)) {
         team1Name = `**${team1Name}**`;
-      } else {
+      } else if (Number(matchup.team1.score) < Number(matchup.team2.score)) {
         team2Name = `**${team2Name}**`;
       }
 
