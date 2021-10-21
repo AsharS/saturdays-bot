@@ -106,6 +106,10 @@ client.on('interactionCreate', async (interaction) => {
     return;
   }
 
+  console.log(
+    `${interaction.commandName} executed by: ${interaction.user.tag}`
+  );
+
   // Check if it is the correct command
   if (interaction.commandName === yahooScoresCommand.name) {
     const message = await Yahoo.getScores();
