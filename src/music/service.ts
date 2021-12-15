@@ -6,7 +6,6 @@ import {
   createAudioResource,
   getVoiceConnection,
   joinVoiceChannel,
-  NoSubscriberBehavior,
   StreamType,
   VoiceConnectionStatus
 } from '@discordjs/voice';
