@@ -34,7 +34,7 @@ export class MusicService {
         this.addSong(query, message);
         break;
       case 'skip':
-        this.skip();
+        this.next(true);
         break;
       case 'stop':
         this.stop();
@@ -137,7 +137,7 @@ export class MusicService {
       });
 
       this.player.on(AudioPlayerStatus.Idle, () => {
-        this.skip();
+        this.next();
       });
     }
 
@@ -156,12 +156,16 @@ export class MusicService {
     );
   }
 
-  private async skip() {
+  private async next(skipped?: boolean) {
     this.queue.shift();
 
     if (this.queue.length > 0) {
       this.player?.pause();
-      this.textChannel?.send('Skipped.');
+
+      if (skipped) {
+        this.textChannel?.send('Skipped.');
+      }
+
       this.play();
     } else {
       this.stop();
