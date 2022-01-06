@@ -1,4 +1,3 @@
-import qs from 'querystring';
 import axios, { AxiosResponse } from 'axios';
 import { MessageEmbed } from 'discord.js';
 import { Matchup } from './matchup';
@@ -70,11 +69,11 @@ export class Yahoo {
   static async setToken() {
     const tokenURL = 'https://api.login.yahoo.com/oauth2/get_token';
     const tokenBody = {
-      client_id: process.env.YAHOO_CLIENT_ID,
-      client_secret: process.env.YAHOO_CLIENT_SECRET,
+      client_id: process.env.YAHOO_CLIENT_ID as string,
+      client_secret: process.env.YAHOO_CLIENT_SECRET as string,
       grant_type: 'refresh_token',
       redirect_uri: 'oob',
-      refresh_token: process.env.YAHOO_REFRESH_TOKEN
+      refresh_token: process.env.YAHOO_REFRESH_TOKEN as string
     };
     const config = {
       headers: {
@@ -83,7 +82,11 @@ export class Yahoo {
     };
 
     try {
-      const body = await axios.post(tokenURL, qs.stringify(tokenBody), config);
+      const body = await axios.post(
+        tokenURL,
+        new URLSearchParams(tokenBody),
+        config
+      );
       fantasyAccessToken = body.data.access_token;
     } catch (e) {
       console.error(e);

@@ -11,6 +11,7 @@ import {
 } from '@discordjs/voice';
 import ytdl from 'ytdl-core';
 import ytsr, { Video } from 'ytsr';
+import { Song } from './song';
 
 export class MusicService {
   private queue: Song[] = [];
@@ -58,47 +59,19 @@ export class MusicService {
     this.voiceChannelId = message.member?.voice.channel?.id;
 
     if (this.voiceChannelId) {
-      if (query.indexOf('youtube.com') > -1) {
-        const songInfo = await ytdl.getBasicInfo(query);
+      const result = await this.search(query);
 
-        if (songInfo) {
-          this.queue.push({
-            title: songInfo.videoDetails.title,
-            url: songInfo.videoDetails.video_url,
-            requestedBy: message.member?.displayName
-          });
-
-          this.play();
-        }
-      } else {
-        const filters = await ytsr.getFilters(query, {
-          gl: 'US',
-          hl: 'en'
+      if (result) {
+        this.queue.push({
+          title: result.title,
+          url: result.url,
+          duration: result.duration,
+          requestedBy: message.member?.displayName
         });
-        const videoFilter = filters.get('Type')?.get('Video');
-        if (videoFilter?.url) {
-          const result = await ytsr(videoFilter.url, {
-            gl: 'US',
-            hl: 'en',
-            limit: 10
-          });
-          if (result.items.length > 0) {
-            const firstResult = result.items.find(
-              (item) => !(item as Video).isLive
-            ) as Video | undefined;
-            if (firstResult) {
-              this.queue.push({
-                title: firstResult.title,
-                url: firstResult.url,
-                requestedBy: message.member?.displayName
-              });
 
-              this.play();
-            } else {
-              message.reply(`Could not find any videos matching \`${query}\`.`);
-            }
-          }
-        }
+        this.play();
+      } else {
+        message.reply(`Could not find any videos matching \`${query}\`.`);
       }
     } else {
       message.reply("You're a bigger bot than me, get in a voice channel.");
@@ -143,16 +116,28 @@ export class MusicService {
 
     const stream = ytdl(songToPlay.url, {
       filter: 'audioonly',
-      dlChunkSize: 0
+      quality: 'highestaudio',
+      liveBuffer: 40000,
+      highWaterMark: 1 << 25
     });
+
+    stream.on('error', (err) => {
+      if (err) {
+        console.error(err);
+        this.next(true);
+      }
+    });
+
     this.player.play(
       createAudioResource(stream, { inputType: StreamType.Arbitrary })
     );
 
     voiceConnection?.subscribe(this.player);
 
+    const durationText = songToPlay.duration ? ` [${songToPlay.duration}]` : '';
+
     this.textChannel?.send(
-      `Now playing \`${songToPlay.title}\`, added by ${songToPlay.requestedBy}.`
+      `Now playing \`${songToPlay.title}${durationText}\`, added by ${songToPlay.requestedBy}.`
     );
   }
 
@@ -171,10 +156,28 @@ export class MusicService {
       this.stop();
     }
   }
-}
 
-interface Song {
-  title: string;
-  url: string;
-  requestedBy: string;
+  private async search(term: string): Promise<Video | undefined> {
+    const filters = await ytsr.getFilters(term, {
+      gl: 'US',
+      hl: 'en'
+    });
+    const videoFilter = filters.get('Type')?.get('Video');
+
+    if (videoFilter?.url) {
+      const result = await ytsr(videoFilter.url, {
+        gl: 'US',
+        hl: 'en',
+        limit: 10
+      });
+
+      if (result.items.length > 0) {
+        return result.items.find((item) => !(item as Video).isLive) as
+          | Video
+          | undefined;
+      }
+    }
+
+    return;
+  }
 }
