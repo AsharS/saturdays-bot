@@ -112,6 +112,11 @@ export class MusicService {
       this.player.on(AudioPlayerStatus.Idle, () => {
         this.next();
       });
+
+      this.player.on('error', (err) => {
+        console.error(err);
+        this.next(true);
+      });
     }
 
     const stream = ytdl(songToPlay.url, {
