@@ -46,8 +46,10 @@ export class MusicService {
   public async stop() {
     this.queue = [];
     getVoiceConnection(this.guild?.id!)?.destroy();
+    if (this.voiceChannelId) {
+      this.textChannel?.send('Finished playing.');
+    }
     this.voiceChannelId = undefined;
-    this.textChannel?.send('Finished playing.');
   }
 
   private async addSong(query: string, message: Message) {
@@ -122,8 +124,8 @@ export class MusicService {
     const stream = ytdl(songToPlay.url, {
       filter: 'audioonly',
       quality: 'highestaudio',
-      liveBuffer: 40000,
-      highWaterMark: 1 << 25
+      liveBuffer: 20000,
+      highWaterMark: 1024 * 512
     });
 
     stream.on('error', (err) => {
