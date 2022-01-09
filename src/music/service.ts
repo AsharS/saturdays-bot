@@ -1,4 +1,4 @@
-import { Guild, Message, TextChannel } from 'discord.js';
+import { Guild, Message, MessageEmbed, TextChannel } from 'discord.js';
 import {
   AudioPlayer,
   AudioPlayerStatus,
@@ -67,7 +67,8 @@ export class MusicService {
         this.queue.push({
           title: result.title,
           url: result.url,
-          duration: result.duration,
+          duration: result.duration || '',
+          thumbnailURL: result.bestThumbnail.url || '',
           requestedBy: message.member?.displayName
         });
 
@@ -82,8 +83,9 @@ export class MusicService {
 
   private async play() {
     if (this.player && this.player.state.status == AudioPlayerStatus.Playing) {
+      const lastSong = this.queue[this.queue.length - 1];
       this.textChannel?.send(
-        `Added \`${this.queue[this.queue.length - 1].title}\` to the queue.`
+        `Added \`${this.getSongName(lastSong)}\` to the queue.`
       );
       return;
     }
@@ -141,11 +143,7 @@ export class MusicService {
 
     voiceConnection?.subscribe(this.player);
 
-    const durationText = songToPlay.duration ? ` [${songToPlay.duration}]` : '';
-
-    this.textChannel?.send(
-      `Now playing \`${songToPlay.title}${durationText}\`, added by ${songToPlay.requestedBy}.`
-    );
+    this.textChannel?.send({ embeds: [this.getNowPlayingMessage(songToPlay)] });
   }
 
   private async next(skipped?: boolean) {
@@ -186,5 +184,24 @@ export class MusicService {
     }
 
     return;
+  }
+
+  private getNowPlayingMessage(songToPlay: Song) {
+    const embedMessage = new MessageEmbed();
+    embedMessage.setAuthor('Now Playing');
+    embedMessage.setTitle(songToPlay.title);
+    embedMessage.setURL(songToPlay.url);
+    embedMessage.addField('Duration', songToPlay.duration, true);
+    embedMessage.addField('Requested By', songToPlay.requestedBy, true);
+    embedMessage.setImage(songToPlay.thumbnailURL);
+
+    return embedMessage;
+  }
+
+  private getSongName(songToPlay: Song) {
+    const name = songToPlay.title;
+    const duration = songToPlay.duration ? ` [${songToPlay.duration}]` : '';
+
+    return name + duration;
   }
 }
