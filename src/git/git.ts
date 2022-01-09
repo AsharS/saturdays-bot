@@ -20,22 +20,33 @@ export class Git {
         `https://api.github.com/repos/${repo.name}/git/refs/heads/${repo.branch}`
       );
       const latestCommit = body.data.object.sha;
-      
-      if (this.lastCommitByRepo.has(repo.name) && this.lastCommitByRepo.get(repo.name) != latestCommit) {
+
+      if (
+        this.lastCommitByRepo.has(repo.name) &&
+        this.lastCommitByRepo.get(repo.name) != latestCommit
+      ) {
         const compareBody = await axios.get(
-          `https://api.github.com/repos/${repo.name}/compare/${this.lastCommitByRepo.get(repo.name)}...${latestCommit}`
+          `https://api.github.com/repos/${
+            repo.name
+          }/compare/${this.lastCommitByRepo.get(repo.name)}...${latestCommit}`
         );
         if (compareBody.data.commits.length > 0) {
           const embedMessage = new MessageEmbed();
-          embedMessage.setAuthor(
-            `${repo.name} updates`,
-            'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
-            `https://github.com/${repo.name}`
-          );
+          embedMessage.setAuthor({
+            name: `${repo.name} updates`,
+            iconURL:
+              'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
+            url: `https://github.com/${repo.name}`
+          });
 
           for (const commitBody of compareBody.data.commits.reverse()) {
-            const dateTime = new Date(commitBody.commit.author.date).toLocaleString('en-US');
-            embedMessage.addField(`${commitBody.commit.author.name} on ${dateTime}`,`${commitBody.commit.message}`);
+            const dateTime = new Date(
+              commitBody.commit.author.date
+            ).toLocaleString('en-US');
+            embedMessage.addField(
+              `${commitBody.commit.author.name} on ${dateTime}`,
+              `${commitBody.commit.message}`
+            );
           }
 
           returnMessages.push(embedMessage);
@@ -46,7 +57,7 @@ export class Git {
 
       this.lastCommitByRepo.set(repo.name, latestCommit);
     }
-    
+
     return returnMessages;
   }
 }
