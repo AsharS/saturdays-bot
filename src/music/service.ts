@@ -188,7 +188,7 @@ export class MusicService {
 
   private getNowPlayingMessage(songToPlay: Song) {
     const embedMessage = new MessageEmbed();
-    embedMessage.setAuthor({ name: 'Now Playing' });
+    embedMessage.setAuthor('Now Playing');
     embedMessage.setTitle(songToPlay.title);
     embedMessage.setURL(songToPlay.url);
     embedMessage.addField('Duration', songToPlay.duration, true);

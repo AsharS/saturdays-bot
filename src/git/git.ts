@@ -32,12 +32,11 @@ export class Git {
         );
         if (compareBody.data.commits.length > 0) {
           const embedMessage = new MessageEmbed();
-          embedMessage.setAuthor({
-            name: `${repo.name} updates`,
-            iconURL:
-              'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
-            url: `https://github.com/${repo.name}`
-          });
+          embedMessage.setAuthor(
+            `${repo.name} updates`,
+            'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
+            `https://github.com/${repo.name}`
+          );
 
           for (const commitBody of compareBody.data.commits.reverse()) {
             const dateTime = new Date(

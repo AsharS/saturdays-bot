@@ -15,12 +15,11 @@ export class Yahoo {
     const matchups = leagueScoreboard['0'].matchups;
 
     const embedMessage = new MessageEmbed();
-    embedMessage.setAuthor({
-      name: `${leagueName} - Week ${leagueScoreboard.week}`,
-      iconURL:
-        'https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/f15f44040d9f09ba0b2541a9ffcc5579495d5b70d3df858654e88d1f3c03c38e.jpg',
-      url: 'https://basketball.fantasysports.yahoo.com/nba/20925'
-    });
+    embedMessage.setAuthor(
+      `${leagueName} - Week ${leagueScoreboard.week}`,
+      'https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/f15f44040d9f09ba0b2541a9ffcc5579495d5b70d3df858654e88d1f3c03c38e.jpg',
+      'https://basketball.fantasysports.yahoo.com/nba/20925'
+    );
 
     for (let i = 0; i < matchups.count; i++) {
       const matchup = new Matchup(matchups[i].matchup['0'].teams);
