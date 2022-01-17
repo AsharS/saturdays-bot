@@ -1,24 +1,28 @@
+import { codeBlock } from '@discordjs/builders';
 import axios, { AxiosResponse } from 'axios';
 import { MessageEmbed } from 'discord.js';
 import { Matchup } from './matchup';
+import { Standing } from './standing';
 
+const leagueKey = 'nba.l.20925';
+const leagueLogoURL =
+  'https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/f15f44040d9f09ba0b2541a9ffcc5579495d5b70d3df858654e88d1f3c03c38e.jpg';
 let fantasyAccessToken: string;
 
 export class Yahoo {
   static async getScores() {
-    let body;
-
-    body = await this.getScoreboard();
+    const body = await this.getScoreboard();
 
     const leagueName = body.data.fantasy_content.league[0].name;
+    const leagueURL = body.data.fantasy_content.league[0].url;
     const leagueScoreboard = body.data.fantasy_content.league[1].scoreboard;
     const matchups = leagueScoreboard['0'].matchups;
 
     const embedMessage = new MessageEmbed();
     embedMessage.setAuthor(
       `${leagueName} - Week ${leagueScoreboard.week}`,
-      'https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/f15f44040d9f09ba0b2541a9ffcc5579495d5b70d3df858654e88d1f3c03c38e.jpg',
-      'https://basketball.fantasysports.yahoo.com/nba/20925'
+      leagueLogoURL,
+      leagueURL
     );
 
     for (let i = 0; i < matchups.count; i++) {
@@ -43,27 +47,34 @@ export class Yahoo {
     return embedMessage;
   }
 
-  static async getScoreboard(throwError = false): Promise<AxiosResponse> {
-    const config = {
-      headers: {
-        Authorization: `Bearer ${fantasyAccessToken}`
-      },
-      params: {
-        format: 'json'
+  static async getStandings() {
+    const standings: Standing[] = [];
+
+    const body = await this.getStandingsFromYahoo();
+    const teams = body.data.fantasy_content.league[1].standings[0].teams;
+
+    for (const [key, value] of Object.entries<any>(teams)) {
+      if (typeof value === 'object') {
+        const teamName = value.team[0][2].name;
+        const teamStanding = value.team[2].team_standings;
+
+        standings.push({
+          teamName: teamName,
+          rank: teamStanding.rank,
+          wins: teamStanding.outcome_totals.wins,
+          losses: teamStanding.outcome_totals.losses,
+          ties: teamStanding.outcome_totals.ties
+        });
       }
-    };
-    return axios
-      .get(
-        'https://fantasysports.yahooapis.com/fantasy/v2/league/nba.l.20925/scoreboard',
-        config
-      )
-      .catch(async (e) => {
-        if (throwError) throw e;
+    }
 
-        await this.setToken();
+    let standingsMessage = '';
+    for (const standing of standings) {
+      standingsMessage += `${standing.rank}. ${standing.teamName} (${standing.wins}-${standing.losses}-${standing.ties})\n`;
+    }
+    standingsMessage = standingsMessage.trim();
 
-        return this.getScoreboard(true);
-      });
+    return codeBlock(standingsMessage);
   }
 
   static async setToken() {
@@ -91,5 +102,55 @@ export class Yahoo {
     } catch (e) {
       console.error(e);
     }
+  }
+
+  private static async getScoreboard(
+    throwError = false
+  ): Promise<AxiosResponse> {
+    const config = {
+      headers: {
+        Authorization: `Bearer ${fantasyAccessToken}`
+      },
+      params: {
+        format: 'json'
+      }
+    };
+    return axios
+      .get(
+        `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/scoreboard`,
+        config
+      )
+      .catch(async (e) => {
+        if (throwError) throw e;
+
+        await this.setToken();
+
+        return this.getScoreboard(true);
+      });
+  }
+
+  private static async getStandingsFromYahoo(
+    throwError = false
+  ): Promise<AxiosResponse> {
+    const config = {
+      headers: {
+        Authorization: `Bearer ${fantasyAccessToken}`
+      },
+      params: {
+        format: 'json'
+      }
+    };
+    return axios
+      .get(
+        `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/standings`,
+        config
+      )
+      .catch(async (e) => {
+        if (throwError) throw e;
+
+        await this.setToken();
+
+        return this.getScoreboard(true);
+      });
   }
 }

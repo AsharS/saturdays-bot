@@ -82,6 +82,11 @@ const yahooScoresCommand = {
   description: "Display the current week's scores",
   options: []
 };
+const yahooStandingsCommand = {
+  name: 'standings',
+  description: "Display the current season's standings",
+  options: []
+};
 
 const pepTalkCommand = {
   name: 'peptalk',
@@ -97,6 +102,7 @@ client.on('ready', async () => {
 
   if (isYahooEnabled()) {
     client.application?.commands.create(yahooScoresCommand);
+    client.application?.commands.create(yahooStandingsCommand);
   }
   client.application?.commands.create(pepTalkCommand);
 });
@@ -114,6 +120,9 @@ client.on('interactionCreate', async (interaction) => {
   if (interaction.commandName === yahooScoresCommand.name) {
     const message = await Yahoo.getScores();
     await interaction.reply({ embeds: [message] });
+  } else if (interaction.commandName === yahooStandingsCommand.name) {
+    const message = await Yahoo.getStandings();
+    await interaction.reply(message);
   } else if (interaction.commandName == pepTalkCommand.name) {
     const message = PepTalk.givePepTalk();
     await interaction.reply(message);
