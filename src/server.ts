@@ -66,6 +66,19 @@ if (isYahooEnabled() && (process.env.SBA_CHANNEL_ID as string)) {
       timezone: 'America/Chicago'
     }
   );
+  nodeCron.schedule(
+    '0 7 * * 1',
+    async () => {
+      const channel: TextChannel = client.channels.cache.get(
+        process.env.SBA_CHANNEL_ID as string
+      ) as TextChannel;
+      const message = await Yahoo.getStandings();
+      channel.send(message);
+    },
+    {
+      timezone: 'America/Chicago'
+    }
+  );
 }
 
 const client = new Client({
