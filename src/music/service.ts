@@ -28,11 +28,14 @@ export class MusicService {
     );
     const messageArray = content.split(' ');
     const command = messageArray.shift();
-    const query = messageArray.join(' ');
+    const term = messageArray.join(' ').trim();
 
     switch (command) {
       case 'play':
-        this.addSong(query, message);
+        if (term.length === 0) {
+          break;
+        }
+        this.addSong(term, message);
         break;
       case 'skip':
         this.next(true);
@@ -52,7 +55,7 @@ export class MusicService {
     this.voiceChannelId = undefined;
   }
 
-  private async addSong(query: string, message: Message) {
+  private async addSong(term: string, message: Message) {
     if (!message.guild || !message.member) {
       return;
     }
@@ -61,7 +64,7 @@ export class MusicService {
     this.voiceChannelId = message.member?.voice.channel?.id;
 
     if (this.voiceChannelId) {
-      const result = await this.search(query);
+      const result = await this.search(term);
 
       if (result) {
         this.queue.push({
@@ -74,7 +77,7 @@ export class MusicService {
 
         this.play();
       } else {
-        message.reply(`Could not find any videos matching \`${query}\`.`);
+        message.reply(`Could not find any videos matching \`${term}\`.`);
       }
     } else {
       message.reply("You're a bigger bot than me, get in a voice channel.");
