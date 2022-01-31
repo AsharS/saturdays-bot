@@ -150,7 +150,7 @@ export class Yahoo {
 
         await this.setToken();
 
-        return this.getScoreboard(true);
+        return this.getStandingsFromYahoo(true);
       });
   }
 }
