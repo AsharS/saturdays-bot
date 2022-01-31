@@ -1,3 +1,4 @@
+import logger from '../logger/winston';
 import { Guild, Message, MessageEmbed, TextChannel } from 'discord.js';
 import {
   AudioPlayer,
@@ -121,7 +122,7 @@ export class MusicService {
       });
 
       this.player.on('error', (err) => {
-        console.error(err);
+        logger.error(err);
         this.next(true);
       });
     }
@@ -135,7 +136,7 @@ export class MusicService {
 
     stream.on('error', (err) => {
       if (err) {
-        console.error(err);
+        logger.error(err);
         this.next(true);
       }
     });

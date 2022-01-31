@@ -1,3 +1,4 @@
+import logger from '../logger/winston';
 import { codeBlock } from '@discordjs/builders';
 import axios, { AxiosResponse } from 'axios';
 import { MessageEmbed } from 'discord.js';
@@ -11,7 +12,7 @@ let fantasyAccessToken: string;
 
 export class Yahoo {
   static async getScores() {
-    const body = await this.getScoreboard();
+    const body = await this.callYahooAPI(YahooContentType.SCOREBOARD);
 
     const leagueName = body.data.fantasy_content.league[0].name;
     const leagueURL = body.data.fantasy_content.league[0].url;
@@ -50,7 +51,7 @@ export class Yahoo {
   static async getStandings() {
     const standings: Standing[] = [];
 
-    const body = await this.getStandingsFromYahoo();
+    const body = await this.callYahooAPI(YahooContentType.STANDINGS);
     const teams = body.data.fantasy_content.league[1].standings[0].teams;
 
     for (const [key, value] of Object.entries<any>(teams)) {
@@ -100,11 +101,12 @@ export class Yahoo {
       );
       fantasyAccessToken = body.data.access_token;
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     }
   }
 
-  private static async getScoreboard(
+  private static async callYahooAPI(
+    content: YahooContentType,
     throwError = false
   ): Promise<AxiosResponse> {
     const config = {
@@ -117,7 +119,7 @@ export class Yahoo {
     };
     return axios
       .get(
-        `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/scoreboard`,
+        `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/${content}`,
         config
       )
       .catch(async (e) => {
@@ -125,32 +127,12 @@ export class Yahoo {
 
         await this.setToken();
 
-        return this.getScoreboard(true);
+        return this.callYahooAPI(content, true);
       });
   }
+}
 
-  private static async getStandingsFromYahoo(
-    throwError = false
-  ): Promise<AxiosResponse> {
-    const config = {
-      headers: {
-        Authorization: `Bearer ${fantasyAccessToken}`
-      },
-      params: {
-        format: 'json'
-      }
-    };
-    return axios
-      .get(
-        `https://fantasysports.yahooapis.com/fantasy/v2/league/${leagueKey}/standings`,
-        config
-      )
-      .catch(async (e) => {
-        if (throwError) throw e;
-
-        await this.setToken();
-
-        return this.getStandingsFromYahoo(true);
-      });
-  }
+enum YahooContentType {
+  SCOREBOARD = 'scoreboard',
+  STANDINGS = 'standings'
 }

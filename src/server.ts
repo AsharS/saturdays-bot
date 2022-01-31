@@ -1,3 +1,4 @@
+import logger from './logger/winston';
 import dotenv from 'dotenv';
 import express from 'express';
 import { Client, Intents, TextChannel } from 'discord.js';
@@ -36,7 +37,7 @@ app.listen(port);
 
 Git.getLatestStatsUpdate();
 
-console.log('Starting git cron job...');
+logger.info('Starting git cron job...');
 nodeCron.schedule('*/5 * * * *', async () => {
   const embedMessages = await Git.getLatestStatsUpdate();
 
@@ -52,7 +53,7 @@ nodeCron.schedule('*/5 * * * *', async () => {
 });
 
 if (isYahooEnabled() && (process.env.SBA_CHANNEL_ID as string)) {
-  console.log('Starting SBA cron job...');
+  logger.info('Starting SBA cron job...');
   nodeCron.schedule(
     '0 0 * * *',
     async () => {
@@ -108,7 +109,7 @@ const pepTalkCommand = {
 };
 
 client.on('ready', async () => {
-  console.log(`Logged in as ${client.user?.tag}!`);
+  logger.info(`Logged in as ${client.user?.tag}!`);
   client.user?.setActivity('every day is Saturday!');
 
   Yahoo.setToken();
@@ -125,7 +126,7 @@ client.on('interactionCreate', async (interaction) => {
     return;
   }
 
-  console.log(
+  logger.info(
     `${interaction.commandName} executed by: ${interaction.user.tag}`
   );
 

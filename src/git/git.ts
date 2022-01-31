@@ -1,3 +1,4 @@
+import logger from '../logger/winston';
 import axios from 'axios';
 import { MessageEmbed } from 'discord.js';
 
@@ -13,7 +14,7 @@ export class Git {
   static async getLatestStatsUpdate() {
     const returnMessages: MessageEmbed[] = [];
 
-    console.log('Checking for new commits');
+    // logger.info('Checking for new commits');
 
     for (const repo of this.repoList) {
       const body = await axios.get(
@@ -51,7 +52,7 @@ export class Git {
           returnMessages.push(embedMessage);
         }
       } else {
-        console.log('No new commits');
+        // logger.info('No new commits');
       }
 
       this.lastCommitByRepo.set(repo.name, latestCommit);
