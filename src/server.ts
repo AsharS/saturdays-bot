@@ -35,22 +35,22 @@ app.get('/', async (req, res) => {
 
 app.listen(port);
 
-Git.getLatestStatsUpdate();
+// Git.getLatestStatsUpdate();
 
-logger.info('Starting git cron job...');
-nodeCron.schedule('*/5 * * * *', async () => {
-  const embedMessages = await Git.getLatestStatsUpdate();
+// logger.info('Starting git cron job...');
+// nodeCron.schedule('*/5 * * * *', async () => {
+//   const embedMessages = await Git.getLatestStatsUpdate();
 
-  if (embedMessages) {
-    const channel: TextChannel = client.channels.cache.get(
-      process.env.UPDATES_CHANNEL_ID as string
-    ) as TextChannel;
+//   if (embedMessages) {
+//     const channel: TextChannel = client.channels.cache.get(
+//       process.env.UPDATES_CHANNEL_ID as string
+//     ) as TextChannel;
 
-    for (const embedMessage of embedMessages) {
-      channel.send({ embeds: [embedMessage] });
-    }
-  }
-});
+//     for (const embedMessage of embedMessages) {
+//       channel.send({ embeds: [embedMessage] });
+//     }
+//   }
+// });
 
 if (isYahooEnabled() && (process.env.SBA_CHANNEL_ID as string)) {
   logger.info('Starting SBA cron job...');
