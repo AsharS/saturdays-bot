@@ -20,11 +20,11 @@ export class Yahoo {
     const matchups = leagueScoreboard['0'].matchups;
 
     const embedMessage = new MessageEmbed();
-    embedMessage.setAuthor(
-      `${leagueName} - Week ${leagueScoreboard.week}`,
-      leagueLogoURL,
-      leagueURL
-    );
+    embedMessage.setAuthor({
+      name: `${leagueName} - Week ${leagueScoreboard.week}`,
+      url: leagueURL,
+      iconURL: leagueLogoURL
+    });
 
     for (let i = 0; i < matchups.count; i++) {
       const matchup = new Matchup(matchups[i].matchup['0'].teams);

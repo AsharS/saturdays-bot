@@ -1,4 +1,3 @@
-import logger from '../logger/winston';
 import axios from 'axios';
 import { MessageEmbed } from 'discord.js';
 
@@ -33,11 +32,12 @@ export class Git {
         );
         if (compareBody.data.commits.length > 0) {
           const embedMessage = new MessageEmbed();
-          embedMessage.setAuthor(
-            `${repo.name} updates`,
-            'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
-            `https://github.com/${repo.name}`
-          );
+          embedMessage.setAuthor({
+            name: `${repo.name} updates`,
+            url: `https://github.com/${repo.name}`,
+            iconURL:
+              'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
+          });
 
           for (const commitBody of compareBody.data.commits.reverse()) {
             const dateTime = new Date(
