@@ -20,6 +20,7 @@ export class MusicService {
   private guild?: Guild;
   private voiceChannelId?: string;
   private player?: AudioPlayer;
+  private timer?: NodeJS.Timeout;
 
   public parseMessage(prefix: string, message: Message) {
     this.textChannel = message.channel as TextChannel;
@@ -42,18 +43,28 @@ export class MusicService {
         this.next(true);
         break;
       case 'stop':
-        this.stop();
+        this.stop(true);
         break;
     }
   }
 
-  public async stop() {
+  public async stop(disconnect = false) {
     this.queue = [];
-    getVoiceConnection(this.guild?.id!)?.destroy();
+    if (disconnect) {
+      this.disconnect();
+    } else {
+      this.timer = setTimeout(() => {
+        this.disconnect();
+      }, 300000);
+    }
     if (this.voiceChannelId) {
       this.textChannel?.send('Finished playing.');
     }
     this.voiceChannelId = undefined;
+  }
+
+  private disconnect() {
+    getVoiceConnection(this.guild?.id!)?.destroy();
   }
 
   private async addSong(term: string, message: Message) {
@@ -86,6 +97,11 @@ export class MusicService {
   }
 
   private async play() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+
     if (this.player && this.player.state.status == AudioPlayerStatus.Playing) {
       const lastSong = this.queue[this.queue.length - 1];
       this.textChannel?.send(
@@ -162,7 +178,7 @@ export class MusicService {
 
       this.play();
     } else {
-      this.stop();
+      this.stop(false);
     }
   }
 

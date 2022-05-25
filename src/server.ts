@@ -167,7 +167,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
   }
 
   if (oldState.channel?.members.size === 1) {
-    musicService.stop();
+    musicService.stop(true);
   }
 });
 
