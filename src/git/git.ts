@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { MessageEmbed } from 'discord.js';
+import { APIEmbedField, EmbedBuilder } from 'discord.js';
 
 export class Git {
   private static repoList = [
@@ -11,7 +11,7 @@ export class Git {
   private static lastCommitByRepo: Map<string, string> = new Map();
 
   static async getLatestStatsUpdate() {
-    const returnMessages: MessageEmbed[] = [];
+    const returnMessages: EmbedBuilder[] = [];
 
     // logger.info('Checking for new commits');
 
@@ -31,7 +31,7 @@ export class Git {
           }/compare/${this.lastCommitByRepo.get(repo.name)}...${latestCommit}`
         );
         if (compareBody.data.commits.length > 0) {
-          const embedMessage = new MessageEmbed();
+          const embedMessage = new EmbedBuilder();
           embedMessage.setAuthor({
             name: `${repo.name} updates`,
             url: `https://github.com/${repo.name}`,
@@ -39,16 +39,17 @@ export class Git {
               'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
           });
 
+          const embedFields: APIEmbedField[] = [];
           for (const commitBody of compareBody.data.commits.reverse()) {
             const dateTime = new Date(
               commitBody.commit.author.date
             ).toLocaleString('en-US');
-            embedMessage.addField(
-              `${commitBody.commit.author.name} on ${dateTime}`,
-              `${commitBody.commit.message}`
-            );
+            embedFields.push({
+              name: `${commitBody.commit.author.name} on ${dateTime}`,
+              value: `${commitBody.commit.message}`
+            });
           }
-
+          embedMessage.addFields(embedFields);
           returnMessages.push(embedMessage);
         }
       } else {

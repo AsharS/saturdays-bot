@@ -1,7 +1,7 @@
 import logger from './logger/winston';
 import dotenv from 'dotenv';
 import express from 'express';
-import { Client, Intents, TextChannel } from 'discord.js';
+import { Client, GatewayIntentBits, TextChannel } from 'discord.js';
 import nodeCron from 'node-cron';
 import { Yahoo } from './yahoo/yahoo';
 import { Git } from './git/git';
@@ -84,10 +84,10 @@ if (isYahooEnabled() && (process.env.SBA_CHANNEL_ID as string)) {
 
 const client = new Client({
   intents: [
-    Intents.FLAGS.GUILDS,
-    Intents.FLAGS.GUILD_MESSAGES,
-    Intents.FLAGS.DIRECT_MESSAGES,
-    Intents.FLAGS.GUILD_VOICE_STATES
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.GuildVoiceStates
   ]
 });
 
@@ -160,7 +160,7 @@ client.on('messageCreate', async (message) => {
 
 client.on('voiceStateUpdate', (oldState, newState) => {
   if (
-    oldState.channelId !== oldState.guild.me?.voice.channelId ||
+    oldState.channelId !== oldState.guild.members.me?.voice.channelId ||
     newState.channel
   ) {
     return;

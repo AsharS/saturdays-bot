@@ -1,7 +1,7 @@
 import logger from '../logger/winston';
 import { codeBlock } from '@discordjs/builders';
 import axios, { AxiosResponse } from 'axios';
-import { MessageEmbed } from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 import { Matchup } from './matchup';
 import { Standing } from './standing';
 
@@ -19,7 +19,7 @@ export class Yahoo {
     const leagueScoreboard = body.data.fantasy_content.league[1].scoreboard;
     const matchups = leagueScoreboard['0'].matchups;
 
-    const embedMessage = new MessageEmbed();
+    const embedMessage = new EmbedBuilder();
     embedMessage.setAuthor({
       name: `${leagueName} - Week ${leagueScoreboard.week}`,
       url: leagueURL,
@@ -31,18 +31,20 @@ export class Yahoo {
 
       let team1Name = matchup.team1.name;
       let team2Name = matchup.team2.name;
-      let team1Score = matchup.team1.score;
-      let team2Score = matchup.team2.score;
+      const team1Score = matchup.team1.score;
+      const team2Score = matchup.team2.score;
       if (Number(matchup.team1.score) > Number(matchup.team2.score)) {
         team1Name = `**${team1Name}**`;
       } else if (Number(matchup.team1.score) < Number(matchup.team2.score)) {
         team2Name = `**${team2Name}**`;
       }
 
-      embedMessage.addField(
-        '\u200B',
-        `${team1Name} - ${team1Score} *(${matchup.team1.projectedScore})* \u200B \u200B \`vs\` \u200B \u200B ${team2Score} *(${matchup.team2.projectedScore})* - ${team2Name}`
-      );
+      embedMessage.addFields([
+        {
+          name: '\u200B',
+          value: `${team1Name} - ${team1Score} *(${matchup.team1.projectedScore})* \u200B \u200B \`vs\` \u200B \u200B ${team2Score} *(${matchup.team2.projectedScore})* - ${team2Name}`
+        }
+      ]);
     }
 
     return embedMessage;

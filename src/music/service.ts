@@ -1,5 +1,5 @@
 import logger from '../logger/winston';
-import { Guild, Message, MessageEmbed, TextChannel } from 'discord.js';
+import { Guild, Message, EmbedBuilder, TextChannel } from 'discord.js';
 import {
   AudioPlayer,
   AudioPlayerStatus,
@@ -64,7 +64,9 @@ export class MusicService {
   }
 
   private disconnect() {
-    getVoiceConnection(this.guild?.id!)?.destroy();
+    if (this.guild?.id) {
+      getVoiceConnection(this.guild.id)?.destroy();
+    }
   }
 
   private async addSong(term: string, message: Message) {
@@ -97,6 +99,10 @@ export class MusicService {
   }
 
   private async play() {
+    if (!this.guild) {
+      return;
+    }
+
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = undefined;
@@ -112,16 +118,17 @@ export class MusicService {
 
     const songToPlay = this.queue[0];
 
-    let voiceConnection = getVoiceConnection(this.guild?.id!);
+    let voiceConnection = getVoiceConnection(this.guild.id);
     if (
-      !voiceConnection ||
-      voiceConnection.state.status == VoiceConnectionStatus.Disconnected ||
-      voiceConnection.state.status == VoiceConnectionStatus.Destroyed
+      this.voiceChannelId &&
+      (!voiceConnection ||
+        voiceConnection.state.status == VoiceConnectionStatus.Disconnected ||
+        voiceConnection.state.status == VoiceConnectionStatus.Destroyed)
     ) {
       voiceConnection = joinVoiceChannel({
-        channelId: this.voiceChannelId!,
-        guildId: this.guild?.id!,
-        adapterCreator: this.guild?.voiceAdapterCreator!,
+        channelId: this.voiceChannelId,
+        guildId: this.guild.id,
+        adapterCreator: this.guild.voiceAdapterCreator,
         selfDeaf: true,
         selfMute: false,
         debug: false
@@ -207,12 +214,22 @@ export class MusicService {
   }
 
   private getNowPlayingMessage(songToPlay: Song) {
-    const embedMessage = new MessageEmbed();
+    const embedMessage = new EmbedBuilder();
     embedMessage.setAuthor({ name: 'Now Playing' });
     embedMessage.setTitle(songToPlay.title);
     embedMessage.setURL(songToPlay.url);
-    embedMessage.addField('Duration', songToPlay.duration, true);
-    embedMessage.addField('Requested By', songToPlay.requestedBy, true);
+    embedMessage.addFields([
+      {
+        name: 'Duration',
+        value: songToPlay.duration,
+        inline: true
+      },
+      {
+        name: 'Requested By',
+        value: songToPlay.requestedBy,
+        inline: true
+      }
+    ]);
     embedMessage.setImage(songToPlay.thumbnailURL);
 
     return embedMessage;
