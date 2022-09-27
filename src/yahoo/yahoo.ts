@@ -5,7 +5,6 @@ import { EmbedBuilder } from 'discord.js';
 import { Matchup } from './matchup';
 import { Standing } from './standing';
 
-const leagueKey = 'nba.l.20925';
 const leagueLogoURL =
   'https://yahoofantasysports-res.cloudinary.com/image/upload/t_s192sq/fantasy-logos/f15f44040d9f09ba0b2541a9ffcc5579495d5b70d3df858654e88d1f3c03c38e.jpg';
 let fantasyAccessToken: string;
@@ -111,6 +110,8 @@ export class Yahoo {
     content: YahooContentType,
     throwError = false
   ): Promise<AxiosResponse> {
+    const leagueKey = process.env.YAHOO_LEAGUE_KEY;
+
     const config = {
       headers: {
         Authorization: `Bearer ${fantasyAccessToken}`
