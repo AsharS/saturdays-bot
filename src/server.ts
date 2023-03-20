@@ -92,6 +92,11 @@ const client = new Client({
   ]
 });
 
+client.on('error', () => {
+  client.destroy();
+  process.exit(1);
+});
+
 const yahooScoresCommand = {
   name: 'scores',
   description: "Display the current week's scores",
