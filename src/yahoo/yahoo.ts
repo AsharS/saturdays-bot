@@ -72,7 +72,12 @@ export class Yahoo {
 
     let standingsMessage = '';
     for (const standing of standings) {
-      standingsMessage += `${standing.rank}. ${standing.teamName} (${standing.wins}-${standing.losses}-${standing.ties})\n`;
+      let rank = '';
+      if (standing.rank) {
+        rank = `${standing.rank}. `;
+      }
+
+      standingsMessage += `${rank}${standing.teamName} (${standing.wins}-${standing.losses}-${standing.ties})\n`;
     }
     standingsMessage = standingsMessage.trim();
 
