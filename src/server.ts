@@ -1,7 +1,13 @@
 import logger from './logger/winston';
 import dotenv from 'dotenv';
 import express from 'express';
-import { Client, GatewayIntentBits, TextChannel } from 'discord.js';
+import {
+  Client,
+  Events,
+  GatewayIntentBits,
+  MessageFlags,
+  TextChannel
+} from 'discord.js';
 import nodeCron from 'node-cron';
 import { Yahoo } from './yahoo/yahoo';
 import { Git } from './git/git';
@@ -12,6 +18,14 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error(`Unhandled Rejection at: ${promise} reason: ${reason}`);
+});
+
+process.on('uncaughtException', (err, origin) => {
+  logger.error(`Caught exception: ${err}\nException origin: ${origin}`);
+});
 
 const isYahooEnabled = () => {
   return JSON.parse(process.env.YAHOO_COMMANDS_ENABLED as string);
@@ -92,7 +106,7 @@ const client = new Client({
   ]
 });
 
-client.on('error', () => {
+client.on(Events.Error, () => {
   client.destroy();
   process.exit(1);
 });
@@ -114,7 +128,7 @@ const pepTalkCommand = {
   options: []
 };
 
-client.on('ready', async () => {
+client.on(Events.ClientReady, async () => {
   logger.info(`Logged in as ${client.user?.tag}!`);
   client.user?.setActivity('every day is Saturday!');
 
@@ -127,8 +141,8 @@ client.on('ready', async () => {
   client.application?.commands.create(pepTalkCommand);
 });
 
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isCommand()) {
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (!interaction.isChatInputCommand()) {
     return;
   }
 
@@ -136,16 +150,34 @@ client.on('interactionCreate', async (interaction) => {
     `${interaction.commandName} executed by: ${interaction.user.tag}`
   );
 
-  // Check if it is the correct command
-  if (interaction.commandName === yahooScoresCommand.name) {
-    const message = await Yahoo.getScores();
-    await interaction.reply({ embeds: [message] });
-  } else if (interaction.commandName === yahooStandingsCommand.name) {
-    const message = await Yahoo.getStandings();
-    await interaction.reply(message);
-  } else if (interaction.commandName == pepTalkCommand.name) {
-    const message = PepTalk.givePepTalk();
-    await interaction.reply(message);
+  try {
+    // Check if it is the correct command
+    if (interaction.commandName === yahooScoresCommand.name) {
+      const message = await Yahoo.getScores();
+      await interaction.reply({ embeds: [message] });
+    } else if (interaction.commandName === yahooStandingsCommand.name) {
+      const message = await Yahoo.getStandings();
+      await interaction.reply(message);
+    } else if (interaction.commandName == pepTalkCommand.name) {
+      const message = PepTalk.givePepTalk();
+      await interaction.reply(message);
+    }
+  } catch (error) {
+    logger.error(
+      `Error executing command ${interaction.commandName}: ${error}`
+    );
+    const errorMessage = 'An error occurred while executing this command.';
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp({
+        content: errorMessage,
+        flags: [MessageFlags.Ephemeral]
+      });
+    } else {
+      await interaction.reply({
+        content: errorMessage,
+        flags: [MessageFlags.Ephemeral]
+      });
+    }
   }
 });
 
@@ -154,7 +186,7 @@ const prefix = '!';
 const musicTextChannel = process.env.MUSIC_CHANNEL_ID as string;
 const musicService = new MusicService();
 
-client.on('messageCreate', async (message) => {
+client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot || !message.content.startsWith(prefix)) {
     return;
   }
@@ -164,7 +196,7 @@ client.on('messageCreate', async (message) => {
   }
 });
 
-client.on('voiceStateUpdate', (oldState, newState) => {
+client.on(Events.VoiceStateUpdate, (oldState, newState) => {
   if (
     oldState.channelId !== oldState.guild.members.me?.voice.channelId ||
     newState.channel

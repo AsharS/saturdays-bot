@@ -13,9 +13,20 @@ export class Yahoo {
   static async getScores() {
     const body = await this.callYahooAPI(YahooContentType.SCOREBOARD);
 
-    const leagueName = body.data.fantasy_content.league[0].name;
-    const leagueURL = body.data.fantasy_content.league[0].url;
-    const leagueScoreboard = body.data.fantasy_content.league[1].scoreboard;
+    if (!body?.data?.fantasy_content?.league) {
+      throw new Error('Unexpected Yahoo API response: Missing league content');
+    }
+
+    const leagueData = body.data.fantasy_content.league;
+    const leagueName = leagueData[0]?.name;
+    const leagueURL = leagueData[0]?.url;
+    const leagueScoreboard = leagueData[1]?.scoreboard;
+
+    if (!leagueScoreboard || !leagueScoreboard['0']?.matchups) {
+      throw new Error(
+        'Unexpected Yahoo API response: Missing scoreboard or matchups'
+      );
+    }
     const matchups = leagueScoreboard['0'].matchups;
 
     const embedMessage = new EmbedBuilder();
@@ -55,10 +66,13 @@ export class Yahoo {
     const body = await this.callYahooAPI(YahooContentType.STANDINGS);
     const teams = body.data.fantasy_content.league[1].standings[0].teams;
 
-    for (const [key, value] of Object.entries<any>(teams)) {
-      if (typeof value === 'object') {
-        const teamName = value.team[0][2].name;
-        const teamStanding = value.team[2].team_standings;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const [, value] of Object.entries(teams as Record<string, any>)) {
+      if (typeof value === 'object' && value !== null) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const teamName = (value as any).team[0][2].name;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const teamStanding = (value as any).team[2].team_standings;
 
         standings.push({
           teamName: teamName,

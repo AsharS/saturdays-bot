@@ -3,6 +3,7 @@ export class Team {
   score: string;
   projectedScore: string;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(teams: any, teamNo: string) {
     this.name = teams[teamNo].team[0][2].name;
     this.score = teams[teamNo].team[1].team_points.total;
